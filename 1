@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FPS Tactical HUD</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #05080a;
+    color: white;
+}
+
+#game {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(circle at 50% 45%, rgba(80,90,90,.22), transparent 35%),
+        linear-gradient(180deg, #11181a 0%, #080c0d 55%, #030506 100%);
+}
+
+/* BACKGROUND */
+.sky {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(120,140,140,.12), transparent 50%),
+        repeating-linear-gradient(
+            90deg,
+            transparent 0,
+            transparent 80px,
+            rgba(255,255,255,.025) 81px
+        );
+}
+
+.building {
+    position: absolute;
+    bottom: 0;
+    background: linear-gradient(90deg,#090d0f,#151b1d,#080b0c);
+    border: 1px solid rgba(255,255,255,.05);
+}
+
+.b1 { left: 0; width: 18%; height: 43%; }
+.b2 { left: 17%; width: 15%; height: 27%; }
+.b3 { right: 0; width: 22%; height: 48%; }
+.b4 { right: 19%; width: 13%; height: 31%; }
+
+.window {
+    position: absolute;
+    width: 7px;
+    height: 12px;
+    background: rgba(190,210,180,.18);
+    box-shadow: 0 0 8px rgba(190,210,180,.1);
+}
+
+/* CROSSHAIR */
+.crosshair {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.crosshair:before,
+.crosshair:after {
+    content: "";
+    position: absolute;
+    background: #b9ff7a;
+    box-shadow: 0 0 5px #b9ff7a;
+}
+
+.crosshair:before {
+    width: 2px;
+    height: 40px;
+    left: 19px;
+    top: 0;
+}
+
+.crosshair:after {
+    width: 40px;
+    height: 2px;
+    left: 0;
+    top: 19px;
+}
+
+.dot {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #fff;
+    left: 18px;
+    top: 18px;
+}
+
+/* TOP HUD */
+.top {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 72px;
+    padding: 15px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(180deg,rgba(0,0,0,.75),transparent);
+}
+
+.logo {
+    font-size: 19px;
+    font-weight: bold;
+    letter-spacing: 3px;
+}
+
+.status {
+    color: #a7ff68;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+.mission {
+    text-align: right;
+    font-size: 12px;
+    letter-spacing: 1px;
+}
+
+.mission b {
+    color: #b8ff75;
+}
+
+/* LEFT HUD */
+.leftHUD {
+    position: absolute;
+    left: 25px;
+    bottom: 30px;
+    width: 250px;
+}
+
+.panel {
+    background: rgba(0,0,0,.55);
+    border-left: 3px solid #a7ff68;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    backdrop-filter: blur(5px);
+}
+
+.label {
+    font-size: 10px;
+    color: #aeb8ba;
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+}
+
+.value {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.healthbar {
+    width: 100%;
+    height: 8px;
+    background: #202627;
+    margin-top: 7px;
+}
+
+.health {
+    width: 100%;
+    height: 100%;
+    background: #9cff62;
+    transition: width .2s;
+}
+
+/* WEAPON */
+.weapon {
+    position: absolute;
+    right: 25px;
+    bottom: 25px;
+    width: 300px;
+    text-align: right;
+}
+
+.weaponName {
+    font-size: 24px;
+    font-weight: bold;
+    letter-spacing: 3px;
+}
+
+.ammo {
+    font-size: 48px;
+    font-weight: bold;
+    color: #caff8c;
+}
+
+.reserve {
+    font-size: 15px;
+    color: #9aa3a5;
+}
+
+.weaponBar {
+    height: 3px;
+    background: #9cff62;
+    margin-top: 10px;
+}
+
+/* BUTTON */
+.controls {
+    position: absolute;
+    left: 50%;
+    bottom: 25px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+}
+
+button {
+    border: 1px solid rgba(180,255,120,.4);
+    background: rgba(0,0,0,.65);
+    color: #caff8c;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+button:hover {
+    background: rgba(160,255,100,.15);
+}
+
+button:active {
+    transform: scale(.95);
+}
+
+/* ENEMIES */
+.enemy {
+    position: absolute;
+    width: 45px;
+    height: 75px;
+    cursor: crosshair;
+    transition: transform .08s;
+}
+
+.enemyHead {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    left: 10px;
+    top: 0;
+    border-radius: 50%;
+    background: #202829;
+    border: 2px solid #788383;
+}
+
+.enemyBody {
+    position: absolute;
+    width: 34px;
+    height: 42px;
+    left: 5px;
+    top: 24px;
+    background: #171d1e;
+    border: 2px solid #596363;
+    clip-path: polygon(20% 0,80% 0,100% 100%,0 100%);
+}
+
+.enemy::after {
+    content: "HOSTILE";
+    position: absolute;
+    white-space: nowrap;
+    font-size: 7px;
+    color: #ff6868;
+    top: -14px;
+    left: 2px;
+    letter-spacing: 1px;
+}
+
+.enemy.dead {
+    opacity: 0;
+    transform: scale(2);
+    pointer-events: none;
+    transition: .3s;
+}
+
+/* HIT */
+.hit {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border: 2px solid #ff5555;
+    border-radius: 50%;
+    transform: translate(-50%,-50%);
+    animation: hit .3s forwards;
+    pointer-events: none;
+}
+
+@keyframes hit {
+    from { opacity: 1; transform: translate(-50%,-50%) scale(.4); }
+    to { opacity: 0; transform: translate(-50%,-50%) scale(1.5); }
+}
+
+/* DAMAGE */
+.damage {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: rgba(255,0,0,.25);
+    opacity: 0;
+}
+
+.damage.flash {
+    animation: damage .3s;
+}
+
+@keyframes damage {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* START SCREEN */
+#startScreen {
+    position: absolute;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0,0,0,.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.startBox {
+    width: min(500px,90%);
+    padding: 35px;
+    border: 1px solid #8dff5d;
+    background: rgba(5,10,10,.95);
+    box-shadow: 0 0 40px rgba(140,255,90,.1);
+}
+
+.startBox h1 {
+    font-size: 34px;
+    letter-spacing: 5px;
+    margin-bottom: 10px;
+}
+
+.startBox p {
+    color: #aab2b3;
+    line-height: 1.7;
+    margin-bottom: 25px;
+}
+
+.startButton {
+    padding: 14px 35px;
+    font-size: 15px;
+}
+
+/* GAME OVER */
+#gameOver {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 40;
+    background: rgba(0,0,0,.85);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#gameOver h1 {
+    font-size: 45px;
+    color: #ff6262;
+    letter-spacing: 6px;
+    margin-bottom: 15px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <div class="sky"></div>
+
+    <div class="building b1"></div>
+    <div class="building b2"></div>
+    <div class="building b3"></div>
+    <div class="building b4"></div>
+
+    <div id="windows"></div>
+    <div id="enemies"></div>
+
+    <div class="top">
+        <div>
+            <div class="logo">FPS // TACTICAL HUD</div>
+            <div class="status">● SYSTEM ONLINE</div>
+        </div>
+
+        <div class="mission">
+            MISSION: <b>ELIMINATE HOSTILES</b><br>
+            HOSTILES: <span id="hostileCount">10</span>
+        </div>
+    </div>
+
+    <div class="leftHUD">
+
+        <div class="panel">
+            <div class="label">HEALTH</div>
+            <div class="value"><span id="healthText">100</span>%</div>
+            <div class="healthbar">
+                <div id="health" class="health"></div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="label">SCORE</div>
+            <div class="value" id="score">000000</div>
+        </div>
+
+    </div>
+
+    <div class="weapon">
+        <div class="label">PRIMARY WEAPON</div>
+        <div class="weaponName">ASSAULT RIFLE</div>
+        <span class="ammo" id="ammo">30</span>
+        <span class="reserve"> / 120</span>
+        <div class="weaponBar"></div>
+    </div>
+
+    <div class="controls">
+        <button onclick="reload()">R — RELOAD</button>
+        <button onclick="newGame()">NEW GAME</button>
+    </div>
+
+    <div class="crosshair">
+        <div class="dot"></div>
+    </div>
+
+    <div id="damage" class="damage"></div>
+
+    <div id="startScreen">
+        <div class="startBox">
+            <h1>TACTICAL OPS</h1>
+            <p>
+                Eliminasi semua target musuh.<br>
+                Klik musuh untuk menembak.<br>
+                Tekan <b>R</b> untuk reload.
+            </p>
+
+            <button class="startButton" onclick="startGame()">
+                START MISSION
+            </button>
+        </div>
+    </div>
+
+    <div id="gameOver">
+        <div>
+            <h1 id="gameOverTitle">MISSION FAILED</h1>
+            <p id="gameOverText"></p>
+            <br>
+            <button onclick="newGame()">TRY AGAIN</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+/* =========================
+   GAME VARIABLES
+========================= */
+
+let health = 100;
+let ammo = 30;
+let reserve = 120;
+let score = 0;
+let enemiesLeft = 10;
+let gameRunning = false;
+let damageTimer = null;
+
+
+/* =========================
+   BACKGROUND WINDOWS
+========================= */
+
+const windows = document.getElementById("windows");
+
+for (let i = 0; i < 90; i++) {
+
+    const w = document.createElement("div");
+
+    w.className = "window";
+
+    w.style.left = Math.random() * 100 + "%";
+    w.style.top = (30 + Math.random() * 60) + "%";
+
+    windows.appendChild(w);
+}
+
+
+/* =========================
+   START GAME
+========================= */
+
+function startGame() {
+
+    document.getElementById("startScreen").style.display = "none";
+
+    newGame();
+
+    gameRunning = true;
+
+    spawnEnemies();
+
+    startEnemyAttack();
+}
+
+
+/* =========================
+   NEW GAME
+========================= */
+
+function newGame() {
+
+    health = 100;
+    ammo = 30;
+    reserve = 120;
+    score = 0;
+    enemiesLeft = 10;
+
+    gameRunning = true;
+
+    document.getElementById("gameOver").style.display = "none";
+
+    document.getElementById("enemies").innerHTML = "";
+
+    updateHUD();
+
+    spawnEnemies();
+}
+
+
+/* =========================
+   SPAWN ENEMIES
+========================= */
+
+function spawnEnemies() {
+
+    const container = document.getElementById("enemies");
+
+    container.innerHTML = "";
+
+    enemiesLeft = 10;
+
+    for (let i = 0; i < 10; i++) {
+
+        const enemy = document.createElement("div");
+
+        enemy.className = "enemy";
+
+        enemy.style.left =
+            (20 + Math.random() * 65) + "%";
+
+        enemy.style.top =
+            (25 + Math.random() * 45) + "%";
+
+        enemy.innerHTML = `
+            <div class="enemyHead"></div>
+            <div class="enemyBody"></div>
+        `;
+
+        enemy.addEventListener("click", function(e) {
+
+            e.stopPropagation();
+
+            shoot(enemy);
+
+        });
+
+        container.appendChild(enemy);
+    }
+
+    updateHUD();
+}
+
+
+/* =========================
+   SHOOT
+========================= */
+
+function shoot(enemy) {
+
+    if (!gameRunning) return;
+
+    if (ammo <= 0) {
+
+        reload();
+
+        return;
+    }
+
+    ammo--;
+
+    score += 100;
+
+    enemy.classList.add("dead");
+
+    enemiesLeft--;
+
+    createHit(enemy);
+
+    updateHUD();
+
+    if (enemiesLeft <= 0) {
+
+        gameRunning = false;
+
+        setTimeout(() => {
+
+            document.getElementById("gameOver").style.display = "flex";
+
+            document.getElementById("gameOverTitle").textContent =
+                "MISSION COMPLETE";
+
+            document.getElementById("gameOverTitle").style.color =
+                "#9cff62";
+
+            document.getElementById("gameOverText").textContent =
+                "Semua hostiles berhasil dieliminasi. Score: " + score;
+
+        }, 500);
+    }
+}
+
+
+/* =========================
+   HIT EFFECT
+========================= */
+
+function createHit(enemy) {
+
+    const rect = enemy.getBoundingClientRect();
+
+    const hit = document.createElement("div");
+
+    hit.className = "hit";
+
+    hit.style.left =
+        rect.left + rect.width / 2 + "px";
+
+    hit.style.top =
+        rect.top + rect.height / 2 + "px";
+
+    document.body.appendChild(hit);
+
+    setTimeout(() => hit.remove(), 400);
+}
+
+
+/* =========================
+   RELOAD
+========================= */
+
+function reload() {
+
+    if (!gameRunning) return;
+
+    if (ammo >= 30) return;
+
+    if (reserve <= 0) return;
+
+    const needed = 30 - ammo;
+
+    const amount = Math.min(needed, reserve);
+
+    ammo += amount;
+
+    reserve -= amount;
+
+    updateHUD();
+}
+
+
+/* =========================
+   ENEMY ATTACK
+========================= */
+
+function startEnemyAttack() {
+
+    clearInterval(damageTimer);
+
+    damageTimer = setInterval(() => {
+
+        if (!gameRunning) return;
+
+        if (Math.random() < 0.45) {
+
+            health -= Math.floor(Math.random() * 8) + 3;
+
+            if (health < 0)
+                health = 0;
+
+            document.getElementById("damage")
+                .classList.remove("flash");
+
+            void document.getElementById("damage")
+                .offsetWidth;
+
+            document.getElementById("damage")
+                .classList.add("flash");
+
+            updateHUD();
+
+            if (health <= 0) {
+
+                gameRunning = false;
+
+                clearInterval(damageTimer);
+
+                document.getElementById("gameOver")
+                    .style.display = "flex";
+
+                document.getElementById("gameOverTitle")
+                    .textContent = "MISSION FAILED";
+
+                document.getElementById("gameOverTitle")
+                    .style.color = "#ff6262";
+
+                document.getElementById("gameOverText")
+                    .textContent =
+                    "Kamu telah tereliminasi. Score: " + score;
+            }
+        }
+
+    }, 1500);
+}
+
+
+/* =========================
+   HUD
+========================= */
+
+function updateHUD() {
+
+    document.getElementById("health").style.width =
+        health + "%";
+
+    document.getElementById("healthText").textContent =
+        health;
+
+    document.getElementById("ammo").textContent =
+        ammo;
+
+    document.getElementById("score").textContent =
+        String(score).padStart(6, "0");
+
+    document.getElementById("hostileCount").textContent =
+        enemiesLeft;
+}
+
+
+/* =========================
+   KEYBOARD
+========================= */
+
+document.addEventListener("keydown", function(e) {
+
+    if (e.key.toLowerCase() === "r") {
+
+        reload();
+
+    }
+
+});
+
+
+/* =========================
+   CLICK EMPTY AREA
+========================= */
+
+document.getElementById("game").addEventListener("click", function() {
+
+    if (!gameRunning) return;
+
+    if (ammo <= 0) {
+
+        reload();
+
+        return;
+    }
+
+    ammo--;
+
+    updateHUD();
+
+});
+
+
+/* INITIAL HUD */
+
+updateHUD();
+
+</script>
+
+</body>
+</html>
